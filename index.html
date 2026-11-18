@@ -14,7 +14,7 @@
   #sky{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #sky:active{cursor:grabbing}
   .hint{position:absolute;left:0;right:0;bottom:32px;text-align:center;font-size:14px;color:var(--label);margin:0;pointer-events:none}
-  .where{position:absolute;left:120px;right:240px;top:22px;text-align:center;font-size:14px;color:var(--ink);margin:0;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .where{position:absolute;left:178px;right:228px;top:22px;text-align:center;font-size:14px;color:var(--ink);margin:0;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .where .k{display:inline-block;vertical-align:middle;margin:0 5px 0 14px}
   .where .dim{color:var(--label)}
   .toggle{position:absolute;right:20px;top:16px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid #2A3A5C;border-radius:3px;padding:7px 14px;cursor:pointer}
@@ -29,6 +29,7 @@
   .spin{position:absolute;left:24px;top:16px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid #2A3A5C;border-radius:3px;padding:6px 12px;cursor:pointer}
   .spin:hover{border-color:var(--line)}
   .spin:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  #reset{left:96px}
   .credit{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:11.5px;color:#6F7E99;margin:0;pointer-events:none}
   @media (max-width:760px){.hint{font-size:12.5px}.toggle{right:14px}.where{left:14px;right:14px;top:58px;font-size:12.5px;white-space:normal}}
 </style>
@@ -38,6 +39,7 @@
 <p class="hint">Drag to turn the sky. Scroll or pinch to zoom. Hover a star or a name.</p>
 <button class="toggle" id="view" type="button" aria-pressed="false">Show as a celestial globe</button>
 <button class="spin" id="spin" type="button" aria-pressed="true">Pause</button>
+<button class="spin" id="reset" type="button" title="Clear the highlighted constellation and return to the starting view">Reset</button>
 <p class="credit">Figures: Stellarium. Star names: HYG Database.</p>
 <p class="where" id="where" hidden></p>
 <div class="card" id="card" role="status" aria-live="polite"></div>
@@ -47,7 +49,7 @@ const canvas=document.getElementById('sky'), ctx=canvas.getContext('2d'), card=d
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const Q=new URLSearchParams(location.search);
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const focusAb=(Q.get('focus')||'').trim()||null;
+let focusAb=(Q.get('focus')||'').trim()||null;
 const latQ=Q.has('lat')&&!isNaN(parseFloat(Q.get('lat')))?Math.max(-90,Math.min(90,parseFloat(Q.get('lat')))):null;
 const monthQ=Q.has('month')&&!isNaN(parseInt(Q.get('month'),10))?MONTHS[(parseInt(Q.get('month'),10)-1+1200)%12]:null;
 const latTxt=latQ===null?'':`${Math.abs(latQ).toFixed(1).replace(/\.0$/,'')}° ${latQ>=0?'N':'S'}`;
@@ -157,11 +159,24 @@ if(focusAb&&DATA.cons[focusAb]){ const c=DATA.cons[focusAb].c, to=[-lon(c[0]),-c
   const it=d3.interpolate(from,to);
   d3.transition().duration(reduce?0:1400).tween('turn',()=>t=>{rot=[...it(t),0]; draw();}); }
 // drag to rotate, wheel or pinch to zoom
-let last=null;
-const zoom=d3.zoom().scaleExtent([.8,4]).on('start',e=>{stopSpin(); last=[e.transform.x,e.transform.y];})
- .on('zoom',e=>{ zoomK=e.transform.k; const dx=e.transform.x-last[0], dy=e.transform.y-last[1]; last=[e.transform.x,e.transform.y];
+let last=null, resetting=false;
+const zoom=d3.zoom().scaleExtent([.8,4]).on('start',e=>{if(!resetting) stopSpin(); last=[e.transform.x,e.transform.y];})
+ .on('zoom',e=>{ zoomK=e.transform.k; if(resetting){last=[e.transform.x,e.transform.y]; draw(); return;} const dx=e.transform.x-last[0], dy=e.transform.y-last[1]; last=[e.transform.x,e.transform.y];
    const s=0.28/zoomK; rot[0]+=dx*s; rot[1]=Math.max(-90,Math.min(90,rot[1]-dy*s)); hideCard(); draw(); });
 d3.select(canvas).call(zoom).on('dblclick.zoom',null);
+// reset: clear the highlighted constellation, zoom back out, turn back to the starting view
+const HOME=[-80,-10,0];
+function resetView(){
+  focusAb=null; hideCard();
+  resetting=true; d3.select(canvas).call(zoom.transform,d3.zoomIdentity); resetting=false; zoomK=1;
+  const from=rot.slice(), to=fromEarth?HOME.slice():[-HOME[0],HOME[1],0];
+  if(Math.abs(to[0]-from[0])>180) from[0]+=to[0]>from[0]?360:-360;
+  const it=d3.interpolate(from,to);
+  d3.transition().duration(reduce?0:900).tween('home',()=>t=>{rot=it(t); draw();})
+    .on('end',()=>{ if(!reduce) setSpin(true); });
+}
+document.getElementById('reset').addEventListener('click',resetView);
+window.addEventListener('keydown',e=>{ if(e.key==='Escape') resetView(); });
 // hover cards
 function showCard(html,x,y){ card.innerHTML=html; card.classList.add('on');
   const bw=card.offsetWidth,bh=card.offsetHeight; let L=x+16,T=y+16; if(L+bw>W-8)L=x-bw-16; if(T+bh>H-8)T=y-bh-16; card.style.left=L+'px'; card.style.top=T+'px'; }
