@@ -1,6 +1,6 @@
 # The Sky Above You: constellation globe
 
-An interactive celestial globe of the 88 constellations, built to sit inside the Tableau Public dashboard **[The Sky Above You](https://public.tableau.com/app/profile/luigi.cicciari)**. It also works on its own.
+An interactive celestial globe of the 88 constellations, built to sit inside the Tableau Public dashboard **[The Sky Above You](https://public.tableau.com/app/profile/luigi.cicciari/viz/TheSkyAboveYou/TheSkyAboveYou)**. It also works on its own.
 
 **Live page:** https://luigicicciari.github.io/constellation-globe/
 
