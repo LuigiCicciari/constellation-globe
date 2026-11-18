@@ -13,8 +13,8 @@
   html,body{margin:0;height:100%;background:var(--sky);color:var(--ink);font-family:Gelasio,Georgia,"Times New Roman",serif;overflow:hidden}
   #sky{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #sky:active{cursor:grabbing}
-  .hint{position:absolute;left:24px;bottom:20px;font-size:14px;color:var(--label);max-width:60ch;margin:0}
-  .toggle{position:absolute;right:20px;bottom:16px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid #2A3A5C;border-radius:3px;padding:7px 14px;cursor:pointer}
+  .hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:14px;color:var(--label);margin:0}
+  .toggle{position:absolute;right:20px;top:16px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid #2A3A5C;border-radius:3px;padding:7px 14px;cursor:pointer}
   .toggle:hover{border-color:var(--line)}
   .toggle:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .card{position:absolute;pointer-events:none;max-width:300px;background:rgba(11,20,38,.94);border:1px solid #2A3A5C;border-radius:3px;padding:10px 13px 11px;font-size:13.5px;line-height:1.5;color:var(--label);opacity:0;transition:opacity .12s}
@@ -26,8 +26,8 @@
   .spin{position:absolute;left:24px;top:16px;font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid #2A3A5C;border-radius:3px;padding:6px 12px;cursor:pointer}
   .spin:hover{border-color:var(--line)}
   .spin:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-  .credit{position:absolute;right:20px;top:14px;font-size:11.5px;color:#6F7E99;margin:0}
-  @media (max-width:640px){.hint{font-size:12.5px;left:14px;bottom:60px}.toggle{right:14px}}
+  .credit{position:absolute;right:20px;bottom:14px;font-size:11.5px;color:#6F7E99;margin:0}
+  @media (max-width:760px){.hint{font-size:12.5px;bottom:34px}.credit{left:0;right:0;text-align:center}.toggle{right:14px}}
 </style>
 </head>
 <body>
@@ -60,14 +60,14 @@ rebuildGeo();
 function size(){
   dpr=window.devicePixelRatio||1; W=canvas.clientWidth; H=canvas.clientHeight;
   canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
-  R=Math.min(W,H)*0.44; draw();
+  R=Math.max(60,Math.min(W*0.92,H-102)/2*0.97); draw();
 }
 function visible(ll){return d3.geoDistance(ll,[-rot[0],-rot[1]])<Math.PI/2-0.02;}
 let starPts=[], labelBoxes=[];
 function draw(){
-  const r=R*zoomK; proj.scale(r).translate([W/2,H/2+ (H>520?6:0)]).rotate(rot);
+  const r=R*zoomK; proj.scale(r).translate([W/2,58+(H-102)/2]).rotate(rot);
   ctx.clearRect(0,0,W,H);
-  const g=ctx.createRadialGradient(W/2-r*.3,H/2-r*.35,r*.1,W/2,H/2,r*1.05);
+  const cy=58+(H-102)/2; const g=ctx.createRadialGradient(W/2-r*.3,cy-r*.35,r*.1,W/2,cy,r*1.05);
   g.addColorStop(0,'#14233F'); g.addColorStop(1,'#0D172C');
   ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle=g; ctx.fill();
   ctx.strokeStyle='rgba(83,111,156,.55)'; ctx.lineWidth=1; ctx.stroke();
@@ -84,7 +84,8 @@ function draw(){
     ctx.beginPath(); path(lineGeo[ab]);
     const on=ab===hoverAb||ab===focusAb, inMonth=monthQ&&DATA.cons[ab]&&DATA.cons[ab].bm===monthQ;
     ctx.strokeStyle=on?'#E8D9A8':(inMonth?'#8FA9D4':'#536F9C'); ctx.lineWidth=on?1.8:(inMonth?1.4:1);
-    ctx.globalAlpha=on||inMonth?1:(monthQ?.45:.85); ctx.stroke();
+    const cc=DATA.cons[ab], dd=cc?d3.geoDistance([lon(cc.c[0]),cc.c[1]],[-rot[0],-rot[1]]):0, edge=Math.max(.15,Math.min(1,(1.75-dd)/0.5));
+    ctx.globalAlpha=(on||inMonth?1:(monthQ?.45:.85))*(on?1:edge); ctx.stroke();
   }
   ctx.globalAlpha=1; starPts=[];
   const sz=Math.max(.75,Math.min(1.6,zoomK*.9));
