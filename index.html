@@ -30,17 +30,19 @@
   .spin:hover{border-color:var(--line)}
   .spin:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   #reset{left:96px}
+  body.embed .credit{display:none}
+  body.embed .hint{bottom:10px}
   .credit{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:11.5px;color:#6F7E99;margin:0;pointer-events:none}
-  @media (max-width:760px){.hint{font-size:12.5px}.toggle{right:14px}.where{left:14px;right:14px;top:58px;font-size:12.5px;white-space:normal}}
+  @media (max-width:760px){.hint{font-size:12.5px;bottom:48px}.credit{font-size:10.5px;padding:0 12px}body.embed .hint{bottom:10px}.toggle{right:14px}.where{left:14px;right:14px;top:58px;font-size:12.5px;white-space:normal}}
 </style>
 </head>
 <body>
 <canvas id="sky" role="img" aria-label="An interactive celestial globe showing the 88 constellations. Drag to turn it; hover a star or a constellation name for details."></canvas>
-<p class="hint">Drag to turn the sky. Scroll or pinch to zoom. Hover a star or a name.</p>
+<p class="hint">Drag to turn the sky. Scroll or pinch to zoom. Hover a star or a name. Reset starts over.</p>
 <button class="toggle" id="view" type="button" aria-pressed="false">Show as a celestial globe</button>
 <button class="spin" id="spin" type="button" aria-pressed="true">Pause</button>
 <button class="spin" id="reset" type="button" title="Clear the highlighted constellation and return to the starting view">Reset</button>
-<p class="credit">Figures: Stellarium. Star names: HYG Database.</p>
+<p class="credit">Constellation figures: Ma-Pe-Ma collection, derived from Stellarium. Star names: HYG Database (astronexus), CC BY-SA 4.0. By Luigi Cicciari.</p>
 <p class="where" id="where" hidden></p>
 <div class="card" id="card" role="status" aria-live="polite"></div>
 <script>
@@ -55,7 +57,9 @@ const monthQ=Q.has('month')&&!isNaN(parseInt(Q.get('month'),10))?MONTHS[(parseIn
 const latTxt=latQ===null?'':`${Math.abs(latQ).toFixed(1).replace(/\.0$/,'')}° ${latQ>=0?'N':'S'}`;
 const placeQ=(Q.get('place')||'').trim().slice(0,40)||null;
 const placeTxt=placeQ||latTxt;
-const TOP=58, BOT=64;   // room for the top buttons and the two bottom lines
+const EMBED=Q.get('embed')==='1';   // inside Tableau: the dashboard footer carries the credits
+if(EMBED) document.body.classList.add('embed');
+const TOP=56, BOT=EMBED?34:58;   // room for the top buttons and the bottom line(s)
 const whereEl=document.getElementById('where');
 let CY=0;
 let W=0,H=0,R=0,dpr=1, zoomK=1, fromEarth=true, rot=[-80,-10,0], spinning=!reduce&&!focusAb, hoverAb=null;
@@ -73,7 +77,7 @@ function size(){
   dpr=window.devicePixelRatio||1; W=canvas.clientWidth; H=canvas.clientHeight;
   canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
   const top=(W<=760&&!whereEl.hidden)?84:TOP;
-  R=Math.max(60,Math.min(W*0.92,H-top-BOT)/2*0.97); CY=top+(H-top-BOT)/2; draw();
+  R=Math.max(60,Math.min(W*0.94,H-top-BOT)/2*0.985); CY=top+(H-top-BOT)/2; draw();
 }
 function visible(ll){return d3.geoDistance(ll,[-rot[0],-rot[1]])<Math.PI/2-0.02;}
 let starPts=[], labelBoxes=[];
